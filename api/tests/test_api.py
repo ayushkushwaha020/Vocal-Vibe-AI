@@ -8,6 +8,13 @@ import main
 
 client = TestClient(main.app)
 
+def test_root_landing_endpoint():
+    response = client.get("/")
+    assert response.status_code == 200
+    assert response.json()["service"] == "VocalVibe AI Audio API"
+    assert response.json()["health"] == "/health"
+    assert response.json()["docs"] == "/docs"
+
 def test_health():
     response = client.get("/health")
     assert response.status_code == 200
