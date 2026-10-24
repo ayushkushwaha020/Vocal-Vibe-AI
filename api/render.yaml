@@ -1,0 +1,5 @@
+# This service can be created as a separate Render Web Service.
+# Runtime: Python
+# Build: pip install -r api/requirements.txt
+# Start: uvicorn main:app --app-dir api --host 0.0.0.0 --port $PORT
+# Health check: /health
