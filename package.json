@@ -1,0 +1,12 @@
+{
+  "name": "vocal-vibe-ai",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Vocal analysis, personalized song discovery and interactive karaoke studio",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
