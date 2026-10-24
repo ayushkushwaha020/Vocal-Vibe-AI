@@ -1,0 +1,28 @@
+name: Audio API tests
+
+on:
+  push:
+    paths:
+      - "api/**"
+      - ".github/workflows/api-tests.yml"
+  pull_request:
+    paths:
+      - "api/**"
+      - ".github/workflows/api-tests.yml"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: api/requirements.txt
+      - name: Install API dependencies
+        run: python -m pip install -r api/requirements.txt
+      - name: Run API tests
+        run: pytest api/tests -q
+        env:
+          PYTHONPATH: api
