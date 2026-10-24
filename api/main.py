@@ -137,6 +137,17 @@ def analyze_audio_bytes(data: bytes) -> dict[str, Any]:
         "notes": notes,
     }
 
+@app.get("/", tags=["operations"])
+def root() -> dict[str, str]:
+    """Provide a useful service landing response instead of a generic 404."""
+    return {
+        "service": "VocalVibe AI Audio API",
+        "status": "ok",
+        "health": "/health",
+        "docs": "/docs",
+        "analyze": "/api/v1/analyze",
+    }
+
 @app.get("/health", response_model=HealthResponse, tags=["operations"])
 @app.get("/healthz", response_model=HealthResponse, include_in_schema=False)
 def health() -> HealthResponse:
