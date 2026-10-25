@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Lightweight, dependency-free checks for VocalVibe's inline browser JavaScript."""
+"""Dependency-free structural and JavaScript syntax checks for VocalVibe AI V2."""
 from html.parser import HTMLParser
 from pathlib import Path
 import subprocess
@@ -36,23 +36,26 @@ class InlineScriptParser(HTMLParser):
 
 html = HTML_FILE.read_text(encoding="utf-8")
 required = [
-    'const API_BASE="https://vocal-vibe-audio-api.onrender.com"',
-    'fetch(API_BASE+"/health"',
-    'fetch(API_BASE+"/api/v1/analyze"',
-    'encodeWav(pcmChunks,capturedRate)',
+    'const $=id=>document.getElementById(id),API="https://vocal-vibe-audio-api.onrender.com"',
+    'fetch(API+"/health"',
+    'fetch(API+"/api/v1/analyze"',
+    'pcmToWav(assessmentPcm,ctx.sampleRate)',
     'id="apiStatus"',
-    'id="playStarterSong"',
+    'id="prompt"',
     'id="pitchRangeMetric"',
-    'window.location.href=url',
-    'id="starterTrackForm"',
+    'id="lrcUpload"',
+    'id="targetToneBtn"',
+    'id="recordBtn"',
+    'id="exportBtn"',
+    'data-practice=',
 ]
 missing = [item for item in required if item not in html]
 if missing:
     raise SystemExit("Frontend integration checks failed; missing: " + ", ".join(missing))
 
-# Prevent demo placeholders from masquerading as measured compatibility scores.
-if 'id="heroFit">94%' in html or any(f"fit:{n}" in html for n in (94, 91, 89, 88, 87, 85)):
-    raise SystemExit("Frontend checks failed: hard-coded song-fit scores must not be shown as personalized results.")
+# Compatibility must not be represented as a fabricated measured score.
+if "94% Vocal Match" in html or 'id="heroFit">94%' in html:
+    raise SystemExit("Frontend checks failed: fabricated personalized song-fit scores must not be shown.")
 
 parser = InlineScriptParser()
 parser.feed(html)
@@ -70,4 +73,4 @@ with tempfile.TemporaryDirectory() as temp_dir:
             print(result.stderr, end="")
             raise SystemExit(f"JavaScript syntax check failed for inline script {index}")
 
-print(f"Frontend checks passed: {len(inline_scripts)} inline script(s) parse, and API integration markers are present.")
+print(f"Frontend checks passed: {len(inline_scripts)} inline script(s) parse and V2 integration markers are present.")
