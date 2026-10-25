@@ -65,6 +65,7 @@ class VocalFeatures(BaseModel):
     zero_crossing_rate_mean: float
     tempo_estimate_bpm: float | None
     notes: list[str]
+    note_segments: list[dict[str, Any]] = []
 
 def analyze_audio_bytes(data: bytes) -> dict[str, Any]:
     """Decode bounded audio and compute transparent, first-pass descriptors."""
@@ -129,8 +130,47 @@ def analyze_audio_bytes(data: bytes) -> dict[str, Any]:
                 if 50 <= candidate <= 200:
                     tempo = float(candidate)
 
+    # Group adjacent pitch frames into stable, note-like segments. These are
+    # observed pitches only; without a target melody/scale we cannot call them
+    # correct or incorrect notes.
+    note_segments: list[dict[str, Any]] = []
+    if "f0" in locals() and f0.size:
+        hop_seconds = 1024 / sr
+        frame_rms = librosa.feature.rms(y=audio, frame_length=2048, hop_length=1024)[0]
+        if frame_rms.size != f0.size:
+            frame_rms = np.interp(np.linspace(0, 1, f0.size), np.linspace(0, 1, frame_rms.size), frame_rms)
+        valid = np.isfinite(f0) & (f0 >= 65) & (f0 <= 1000) & (frame_rms > max(0.008, float(np.max(frame_rms)) * 0.12))
+        midi = np.full(f0.shape, -1, dtype=int)
+        midi[valid] = np.rint(69 + 12 * np.log2(f0[valid] / 440.0)).astype(int)
+        for idx in range(1, len(midi) - 1):
+            if midi[idx - 1] == midi[idx + 1] != -1 and midi[idx] != midi[idx - 1]:
+                midi[idx] = midi[idx - 1]
+        starts = np.flatnonzero(np.r_[True, midi[1:] != midi[:-1]])
+        ends = np.r_[starts[1:], len(midi)]
+        note_names = ["C", "C♯", "D", "D♯", "E", "F", "F♯", "G", "G♯", "A", "A♯", "B"]
+        for start, end in zip(starts, ends):
+            length = int(end - start)
+            note_num = int(midi[start])
+            duration = length * hop_seconds
+            if note_num < 0 or duration < 0.25:
+                continue
+            segment_hz = float(np.median(f0[start:end]))
+            target_hz = 440.0 * (2.0 ** ((note_num - 69) / 12.0))
+            cents = 1200.0 * np.log2(segment_hz / target_hz)
+            note_segments.append({
+                "note": f"{note_names[note_num % 12]}{note_num // 12 - 1}",
+                "start_seconds": round(float(start * hop_seconds), 2),
+                "duration_seconds": round(float(duration), 2),
+                "median_pitch_hz": round(segment_hz, 1),
+                "cents_from_equal_tempered_note": round(float(cents), 1),
+                "frame_count": length,
+            })
+            if len(note_segments) >= 40:
+                break
+
     notes = [
         "These measurements are estimates from this sample, not a diagnosis or a complete vocal-range assessment.",
+        "Detected note names describe the pitches heard; without a target melody or scale, they do not measure whether you sang the intended notes correctly.",
         "Record in a quiet room and avoid straining to reach notes.",
         "Only the uploaded microphone recording is analyzed; use headphones to prevent song playback from leaking acoustically into the mic. This API processes the upload in memory and does not save the audio file.",
     ]
@@ -149,6 +189,7 @@ def analyze_audio_bytes(data: bytes) -> dict[str, Any]:
         "zero_crossing_rate_mean": round(float(np.mean(zcr)), 5),
         "tempo_estimate_bpm": round(tempo, 2) if tempo is not None else None,
         "notes": notes,
+        "note_segments": note_segments,
     }
 
 @app.get("/", tags=["operations"])
