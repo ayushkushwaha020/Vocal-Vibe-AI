@@ -55,3 +55,8 @@ def test_analyze_synthetic_tone(monkeypatch):
     assert result["rms_energy"] > 0
     assert result["estimated_pitch_median_hz"] is not None
     assert abs(result["estimated_pitch_median_hz"] - 220) < 20
+    assert result["recording_quality"] in {"Low", "Medium", "Good"}
+    assert len(result["mfcc_mean"]) == 13
+    assert result["spectral_rolloff_mean_hz"] > 0
+    assert isinstance(result["quality_notes"], list)
+    assert isinstance(result["note_segments"], list)
