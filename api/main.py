@@ -14,6 +14,7 @@ from typing import Any
 import librosa
 import numpy as np
 import soundfile as sf
+from scipy.signal import correlate
 from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -22,7 +23,7 @@ logging.basicConfig(level=os.getenv("LOG_LEVEL", "INFO"))
 logger = logging.getLogger("vocalvibe.api")
 
 MAX_UPLOAD_BYTES = 10 * 1024 * 1024
-MAX_DURATION_SECONDS = 35
+MAX_DURATION_SECONDS = 50
 ALLOWED_CONTENT_TYPES = {
     "audio/wav", "audio/x-wav", "audio/wave", "audio/vnd.wave",
     "audio/flac", "audio/x-flac", "application/octet-stream",
@@ -89,14 +90,14 @@ def analyze_audio_bytes(data: bytes) -> dict[str, Any]:
     if not np.isfinite(audio).all():
         raise HTTPException(status_code=422, detail="Audio contains invalid numeric samples.")
 
-    rms = librosa.feature.rms(y=audio)[0]
-    centroid = librosa.feature.spectral_centroid(y=audio, sr=sr)[0]
-    zcr = librosa.feature.zero_crossing_rate(y=audio)[0]
+    rms = librosa.feature.rms(y=audio, hop_length=1024)[0]
+    centroid = librosa.feature.spectral_centroid(y=audio, sr=sr, hop_length=1024)[0]
+    zcr = librosa.feature.zero_crossing_rate(y=audio, hop_length=1024)[0]
     # pYIN is more expensive and can fail on short/noisy samples; use YIN and
     # keep only estimates in a broad singing-frequency range.
     try:
-        f0 = librosa.yin(audio, fmin=65, fmax=1000, sr=sr)
-        frame_rms = librosa.feature.rms(y=audio, frame_length=2048, hop_length=512)[0]
+        f0 = librosa.yin(audio, fmin=65, fmax=1000, sr=sr, frame_length=2048, hop_length=1024)
+        frame_rms = librosa.feature.rms(y=audio, frame_length=2048, hop_length=1024)[0]
         if frame_rms.size != f0.size:
             frame_rms = np.interp(
                 np.linspace(0, 1, f0.size),
@@ -122,7 +123,7 @@ def analyze_audio_bytes(data: bytes) -> dict[str, Any]:
             min_lag = max(1, int((60.0 / 200.0) * sr / 512))
             max_lag = min(len(envelope) - 1, int((60.0 / 50.0) * sr / 512))
             if max_lag > min_lag:
-                correlations = np.correlate(envelope, envelope, mode="full")[len(envelope)-1:]
+                correlations = correlate(envelope, envelope, mode="full", method="fft")[len(envelope)-1:]
                 lag = min_lag + int(np.argmax(correlations[min_lag:max_lag + 1]))
                 candidate = 60.0 * sr / (512 * lag)
                 if 50 <= candidate <= 200:
@@ -131,7 +132,7 @@ def analyze_audio_bytes(data: bytes) -> dict[str, Any]:
     notes = [
         "These measurements are estimates from this sample, not a diagnosis or a complete vocal-range assessment.",
         "Record in a quiet room and avoid straining to reach notes.",
-        "This API processes the upload in memory and does not save the audio file.",
+        "Only the uploaded microphone recording is analyzed; use headphones to prevent song playback from leaking acoustically into the mic. This API processes the upload in memory and does not save the audio file.",
     ]
     pitch = {
         "estimated_pitch_median_hz": round(float(np.median(voiced)), 2) if voiced.size else None,
