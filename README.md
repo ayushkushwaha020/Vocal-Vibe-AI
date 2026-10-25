@@ -1,10 +1,10 @@
-# VocalVibe AI — Version 2
+# Vocal4Ace — Version 2
 
-VocalVibe AI is a voice-first singing practice prototype: guided microphone assessment, acoustic analysis, honest song discovery, and an interactive karaoke practice workspace.
+Vocal4Ace is a voice-first singing practice prototype: guided microphone assessment, acoustic analysis, honest song discovery, and an interactive karaoke practice workspace.
 
 ## V2 product direction
 
-Version 2 is a rebuild around the supplied VocalVibe AI blueprint. New V2 work is developed separately before promotion; preserve the baseline branch as a fallback.
+Version 2 is a rebuild around the supplied Vocal4Ace blueprint. New V2 work is developed separately before promotion; preserve the baseline branch as a fallback.
 
 ## Current V2 experience
 
