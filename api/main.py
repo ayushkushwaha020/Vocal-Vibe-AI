@@ -108,12 +108,25 @@ def analyze_audio_bytes(data: bytes) -> dict[str, Any]:
         logger.exception("Pitch estimation failed")
         voiced = np.array([], dtype=float)
 
-    try:
-        tempo = float(librosa.feature.tempo(y=audio, sr=sr)[0])
-        if not np.isfinite(tempo):
-            tempo = None
-    except Exception:
-        tempo = None
+    # Estimate tempo from the already-computed RMS envelope instead of
+    # running librosa's full onset/beat-tracking pipeline. This is much cheaper
+    # for short voice samples; treat it as a rough rhythm hint, not a music BPM.
+    tempo = None
+    if rms.size >= 12:
+        envelope = np.asarray(rms, dtype=np.float64)
+        envelope = envelope - np.mean(envelope)
+        norm = float(np.linalg.norm(envelope))
+        if norm > 1e-9:
+            envelope /= norm
+            # RMS frames use librosa's default 512-sample hop.
+            min_lag = max(1, int((60.0 / 200.0) * sr / 512))
+            max_lag = min(len(envelope) - 1, int((60.0 / 50.0) * sr / 512))
+            if max_lag > min_lag:
+                correlations = np.correlate(envelope, envelope, mode="full")[len(envelope)-1:]
+                lag = min_lag + int(np.argmax(correlations[min_lag:max_lag + 1]))
+                candidate = 60.0 * sr / (512 * lag)
+                if 50 <= candidate <= 200:
+                    tempo = float(candidate)
 
     notes = [
         "These measurements are estimates from this sample, not a diagnosis or a complete vocal-range assessment.",
