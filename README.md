@@ -1,6 +1,45 @@
-# VocalVibe AI — Version 2
+# VocalVibe AI — Version 3 Studio
 
-VocalVibe AI is a voice-first singing practice prototype: guided microphone assessment, acoustic analysis, honest song discovery, and an interactive karaoke practice workspace.
+VocalVibe AI Version 3 is a comprehensive, full-stack vocal studio and acoustic analysis platform.
+
+## 🌟 Full 4-Phase VocalVibe AI Studio
+
+### Phase 1: 30-Second Guided Vocal Diagnostic Test
+- **Prompts:** Sa Re Ga Ma (Classical Scale), Universal Melody, Rhythmic Lyric
+- **Real-Time Visualizers:** Live FFT & Waveform visualizers, Decibel Meter (-INF to 0 dB)
+- **Calibration:** Noise Gate calibration to filter background acoustic noise
+
+### Phase 2: Acoustic Analysis & Vocal Aura Profile
+- **YIN F0 Pitch Analysis & Range:** Classification into Bass, Baritone, Tenor, Alto, Mezzo-Soprano, Soprano
+- **Spectral Centroid:** Timbre brightness/weight estimation
+- **Harmonic-to-Noise Ratio (HNR):** Voice clarity vs. huskiness metric
+- **Pitch Jitter & Stability:** Sustain stability measurement
+- **Celebrity Vocal Twin Match:** AI-powered vocal similarity matching
+
+### Phase 3: Smart Song Recommendation Engine
+- **Vocal Fit Score Badges:** Dynamic percentage matching based on user vocal profile
+- **Mood & Genre Filters:** Romantic, Sufi, Indie, Retro, Sad, Rap/Hip-Hop, High-Energy
+- **Insights:** "Why This Suits You" personalized reasoning for every song recommendation
+
+### Phase 4: Interactive Karaoke & Practice Studio
+- **Synthesized Backing Track & Lyrics:** Time-synced `.LRC` lyrics engine
+- **Real-Time Pitch Guide (Sur Meter):** Octave-normalized pitch-class comparison (`const semitoneDiff = Math.abs(((midi % 12) - (target % 12) + 12) % 12); const normalizedDiff = Math.min(semitoneDiff, 12 - semitoneDiff);`)
+- **Scale / Pitch Shifter:** Transpose backing track from `-2` to `+2` semitones
+- **Note Rendering:** HTML-escaped note rendering (`String(m.note).replace(/[&<>"]/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[ch]))`)
+- **Quality Safeguards:** `recording_quality` automatically capped at `'Medium'` when `duration < 5`
+
+## 🚀 Getting Started
+
+```bash
+# Frontend
+open index.html
+
+# Backend API
+cd api
+pip install -r requirements.txt
+uvicorn main:app --reload
+```
+ practice workspace.
 
 ## V2 product direction
 
