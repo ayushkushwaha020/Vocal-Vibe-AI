@@ -6,14 +6,14 @@ AI-inspired vocal discovery, browser-based voice diagnostics, personalized song-
 
 This repository contains a deployable, responsive Milestone 1 prototype:
 - Microphone permission and live waveform visualization
-- Browser-side pitch estimation and a guided 30-second assessment
-- Vocal Aura profile with estimated pitch range and voice texture cues
-- Song discovery cards with fit explanations and mood filters
-- Karaoke studio with timed demo lyrics, pitch feedback, recording controls, and semitone controls
+- Browser-side live pitch preview and a guided 10-second singing assessment
+- Vocal Aura profile with median pitch estimate, observed pitch percentiles, acoustic texture cue, and average signal energy
+- Demo song discovery cards with mood filters (personalized compatibility scores are not shown until real song metadata is available)
+- Karaoke studio with timed demo lyrics, pitch feedback, recording controls, semitone controls, and YouTube search / pasted-video embedding
 - Responsive accessibility-minded interface and reduced-motion support
 - Node HTTP server with `/health` and `/healthz` health endpoints
 
-**Honest limitations:** vocal type and celebrity-twin percentages are entertainment-oriented estimates, not validated clinical or professional classifications. This MVP uses demo song/lyric data and a synthesized practice tone; it does not ship copyrighted backing tracks or full commercial lyrics. Real song synchronization requires licensed audio and lyric assets. Robust pitch-shifting, server-side Librosa analysis, authentication, persistent user data, and Gemini integration are later milestones.
+**Honest limitations:** vocal type and celebrity-twin percentages are entertainment-oriented estimates, not validated clinical or professional classifications. This MVP uses original demo song/lyric data and a synthesized practice tone. The starter-song button redirects to YouTube search; users can paste a video URL to embed it when permitted. YouTube search results are not fetched into the app, and no commercial backing tracks or full copyrighted lyrics are bundled. Real song synchronization requires licensed audio and lyric assets. Robust pitch-shifting, server-side Librosa analysis, authentication, persistent user data, and Gemini integration are later milestones.
 
 ## Run locally
 
@@ -37,7 +37,7 @@ The included `render.yaml` describes the service for Blueprint-based deployments
 
 ## Privacy and safety
 
-Microphone input is processed in the browser for the prototype and is not uploaded by this app. The browser may ask for microphone permission. Stop recording when finished. Do not treat automated feedback as professional vocal coaching or medical advice.
+Live microphone audio is processed in the browser for the pitch preview. When the user selects Analyze, the recorded WAV sample is uploaded to the FastAPI audio service for feature extraction. The API processes it in memory and does not intentionally persist the uploaded file. Use headphones during karaoke playback to reduce music leaking into the microphone. The browser may ask for microphone permission; stop recording when finished. Do not treat automated feedback as professional vocal coaching or medical advice.
 
 ## Architecture roadmap
 
