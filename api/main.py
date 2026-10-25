@@ -62,7 +62,11 @@ class VocalFeatures(BaseModel):
     estimated_pitch_p90_hz: float | None
     voiced_frame_ratio: float
     spectral_centroid_mean_hz: float
+    spectral_rolloff_mean_hz: float
     zero_crossing_rate_mean: float
+    mfcc_mean: list[float]
+    recording_quality: str
+    quality_notes: list[str]
     tempo_estimate_bpm: float | None
     notes: list[str]
     note_segments: list[dict[str, Any]] = []
@@ -94,6 +98,8 @@ def analyze_audio_bytes(data: bytes) -> dict[str, Any]:
     rms = librosa.feature.rms(y=audio, hop_length=1024)[0]
     centroid = librosa.feature.spectral_centroid(y=audio, sr=sr, hop_length=1024)[0]
     zcr = librosa.feature.zero_crossing_rate(y=audio, hop_length=1024)[0]
+    rolloff = librosa.feature.spectral_rolloff(y=audio, sr=sr, hop_length=1024)[0]
+    mfcc = librosa.feature.mfcc(y=audio, sr=sr, n_mfcc=13, hop_length=1024)
     # pYIN is more expensive and can fail on short/noisy samples; use YIN and
     # keep only estimates in a broad singing-frequency range.
     try:
@@ -168,6 +174,26 @@ def analyze_audio_bytes(data: bytes) -> dict[str, Any]:
             if len(note_segments) >= 40:
                 break
 
+    voiced_ratio = float(voiced.size / max(1, f0.size)) if "f0" in locals() else 0.0
+    peak_level = float(np.max(np.abs(audio)))
+    quality_notes: list[str] = []
+    if duration < 5:
+        quality_notes.append("A longer sample (about 10–30 seconds) may provide more reliable note and stability estimates.")
+    if voiced_ratio < 0.2:
+        quality_notes.append("Very little clearly voiced pitch was detected. Try speaking or singing closer to the microphone.")
+    if float(np.mean(rms)) < 0.008:
+        quality_notes.append("The recording level is very low; check microphone distance and input level.")
+    if peak_level >= 0.99:
+        quality_notes.append("The waveform approaches digital clipping. Lower the input level or move slightly farther from the microphone.")
+    if not quality_notes:
+        quality_notes.append("No basic duration, level, or clipping warning was triggered; this is not a guarantee of studio-quality audio.")
+    if voiced_ratio < 0.2 or float(np.mean(rms)) < 0.008:
+        recording_quality = "Low"
+    elif peak_level >= 0.99 or voiced_ratio < 0.4:
+        recording_quality = "Medium"
+    else:
+        recording_quality = "Good"
+
     notes = [
         "These measurements are estimates from this sample, not a diagnosis or a complete vocal-range assessment.",
         "Detected note names describe the pitches heard; without a target melody or scale, they do not measure whether you sang the intended notes correctly.",
@@ -178,7 +204,7 @@ def analyze_audio_bytes(data: bytes) -> dict[str, Any]:
         "estimated_pitch_median_hz": round(float(np.median(voiced)), 2) if voiced.size else None,
         "estimated_pitch_p10_hz": round(float(np.percentile(voiced, 10)), 2) if voiced.size else None,
         "estimated_pitch_p90_hz": round(float(np.percentile(voiced, 90)), 2) if voiced.size else None,
-        "voiced_frame_ratio": round(float(voiced.size / max(1, f0.size)), 3) if "f0" in locals() else 0.0,
+        "voiced_frame_ratio": round(voiced_ratio, 3),
     }
     return {
         "duration_seconds": round(duration, 3),
@@ -186,7 +212,11 @@ def analyze_audio_bytes(data: bytes) -> dict[str, Any]:
         "rms_energy": round(float(np.mean(rms)), 6),
         **pitch,
         "spectral_centroid_mean_hz": round(float(np.mean(centroid)), 2),
+        "spectral_rolloff_mean_hz": round(float(np.mean(rolloff)), 2),
         "zero_crossing_rate_mean": round(float(np.mean(zcr)), 5),
+        "mfcc_mean": [round(float(value), 4) for value in np.mean(mfcc, axis=1)],
+        "recording_quality": recording_quality,
+        "quality_notes": quality_notes,
         "tempo_estimate_bpm": round(tempo, 2) if tempo is not None else None,
         "notes": notes,
         "note_segments": note_segments,
