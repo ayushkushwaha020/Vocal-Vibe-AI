@@ -41,10 +41,18 @@ required = [
     'fetch(API_BASE+"/api/v1/analyze"',
     'encodeWav(pcmChunks,capturedRate)',
     'id="apiStatus"',
+    'id="playStarterSong"',
+    'id="pitchRangeMetric"',
+    'window.location.href=url',
+    'id="starterTrackForm"',
 ]
 missing = [item for item in required if item not in html]
 if missing:
     raise SystemExit("Frontend integration checks failed; missing: " + ", ".join(missing))
+
+# Prevent demo placeholders from masquerading as measured compatibility scores.
+if 'id="heroFit">94%' in html or any(f"fit:{n}" in html for n in (94, 91, 89, 88, 87, 85)):
+    raise SystemExit("Frontend checks failed: hard-coded song-fit scores must not be shown as personalized results.")
 
 parser = InlineScriptParser()
 parser.feed(html)
