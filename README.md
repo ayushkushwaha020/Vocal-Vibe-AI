@@ -1,47 +1,40 @@
-# VocalVibe AI 🎙️
+# VocalVibe AI — Version 2
 
-AI-inspired vocal discovery, browser-based voice diagnostics, personalized song-fit recommendations, and interactive karaoke practice.
+Version 2 is developed on the separate `version-2` branch. The existing `main` branch remains the Version 1 baseline and is not modified by V2-only commits.
 
-## Current release
+## V2 implemented in this branch
 
-This repository contains a deployable, responsive Milestone 1 prototype:
-- Microphone permission and live waveform visualization
-- Browser-side live pitch preview and a guided 10-second singing assessment
-- Vocal Aura profile with median pitch estimate, observed pitch percentiles, acoustic texture cue, and average signal energy
-- Demo song discovery cards with mood filters (personalized compatibility scores are not shown until real song metadata is available)
-- Karaoke studio with timed demo lyrics, pitch feedback, recording controls, semitone controls, and YouTube search / pasted-video embedding
-- Responsive accessibility-minded interface and reduced-motion support
-- Node HTTP server with `/health` and `/healthz` health endpoints
+- Keeps the existing responsive VocalVibe AI interface, microphone flow, karaoke prototype, and note-segment results.
+- Adds backend spectral rolloff and 13 averaged MFCC coefficients as additional acoustic descriptors.
+- Adds heuristic recording-quality checks for low signal level, low voiced-frame ratio, short samples, and possible clipping.
+- Displays recording-quality feedback and acoustic diagnostics in the results interface.
+- Extends the synthetic-tone API test to check the new response fields.
 
-**Honest limitations:** vocal type and celebrity-twin percentages are entertainment-oriented estimates, not validated clinical or professional classifications. This MVP uses original demo song/lyric data and a synthesized practice tone. The starter-song button redirects to YouTube search; users can paste a video URL to embed it when permitted. YouTube search results are not fetched into the app, and no commercial backing tracks or full copyrighted lyrics are bundled. Real song synchronization requires licensed audio and lyric assets. Robust pitch-shifting, server-side Librosa analysis, authentication, persistent user data, and Gemini integration are later milestones.
+## Important limitations
 
-## Run locally
+- The quality label is a lightweight heuristic, not a calibrated studio-quality rating.
+- MFCCs and spectral measurements do not independently establish voice type, vocal health, breath control, or celebrity similarity.
+- Detected notes are observed pitches; note correctness requires a target scale or melody.
+- Song compatibility scores remain hidden until verified song key/range metadata and a validated scoring method are available.
+- Karaoke transposition, lyric synchronization, vocal separation, recording mix/export, Gemini coaching, authentication, and persistent user profiles are not yet complete.
+- Browser end-to-end testing and deployment validation are required before release.
 
-Requires Node.js 20+.
+## V2 development roadmap
 
-```bash
-npm start
-```
+1. **Analyzer reliability:** test synthetic tones across frequencies, note transitions, noisy audio, clipping, and quiet recordings.
+2. **Targeted note accuracy:** add a selectable reference scale and compare observed pitches with expected notes.
+3. **Vocal profile:** validate pitch range and acoustic descriptions; avoid definitive vocal-type claims from short samples.
+4. **Song matching:** add verified song metadata and explainable fit calculations before showing compatibility percentages.
+5. **Karaoke:** validate real pitch shifting, timestamped lyrics, live target-note feedback, and recording replay.
+6. **AI coaching:** add a server-side AI provider integration with secret management, consent, rate limits, and grounded feedback.
+7. **Release gate:** run API tests, frontend syntax checks, browser workflow tests, accessibility checks, and deployment health checks.
 
-Open http://localhost:3000. Use HTTPS or localhost for microphone access.
+## Local development
 
-## Deploy on Render
+Frontend: `npm install && npm start`
 
-Create a **Node** Web Service connected to this repository:
-- Build command: `npm install`
-- Start command: `npm start`
-- Health check path: `/health`
-- Node version: 20+
+Backend: `pip install -r api/requirements.txt` then `uvicorn main:app --app-dir api --reload`
 
-The included `render.yaml` describes the service for Blueprint-based deployments.
+Run API tests from the `api` directory with `pytest -q`.
 
-## Privacy and safety
-
-Live microphone audio is processed in the browser for the pitch preview. When the user selects Analyze, the recorded WAV sample is uploaded to the FastAPI audio service for feature extraction. The API processes it in memory and does not intentionally persist the uploaded file. Use headphones during karaoke playback to reduce music leaking into the microphone. The browser may ask for microphone permission; stop recording when finished. Do not treat automated feedback as professional vocal coaching or medical advice.
-
-## Architecture roadmap
-
-1. **MVP (included):** browser microphone, pitch visualization, recommendations, karaoke interaction.
-2. **Analysis API:** FastAPI + Librosa/pYIN, request limits, validation, privacy-conscious upload handling, tests and observability.
-3. **Personalization:** licensed catalog, verified song key/range metadata, account controls and consent-based persistence.
-4. **Advanced studio:** licensed stems, time-stretched pitch shifting, synced licensed LRC, mix recording and export.
+V2 should be deployed from this branch only after its tests pass and the remaining release criteria are reviewed.
